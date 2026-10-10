@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: greencircuit-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:mysql://${db.HOST}:${db.PORT}/${db.DATABASE}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: greencircuit-db
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: greencircuit-db
+          property: password
+
+databases:
+  - name: greencircuit-db
+    databaseName: ewaste_db
+    user: root
+    plan: free
