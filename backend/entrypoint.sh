@@ -1,10 +1,40 @@
 #!/bin/sh
 set -e
 
-URL="${SPRING_DATASOURCE_URL:-$DATABASE_URL}"
+URL="${SPRING_DATASOURCE_URL:-${MYSQL_URL:-$DATABASE_URL}}"
 
 if [ -n "$URL" ]; then
   case "$URL" in
+    mysql://*)
+      WITHOUT_SCHEME="${URL#*://}"
+      if echo "$WITHOUT_SCHEME" | grep -q "@"; then
+        CREDENTIALS="${WITHOUT_SCHEME%@*}"
+        HOST_AND_DB="${WITHOUT_SCHEME##*@}"
+        USER="${CREDENTIALS%%:*}"
+        PASS="${CREDENTIALS#*:}"
+      else
+        HOST_AND_DB="$WITHOUT_SCHEME"
+        USER=""
+        PASS=""
+      fi
+
+      export SPRING_DATASOURCE_URL="jdbc:mysql://$HOST_AND_DB"
+      
+      if [ -n "$USER" ]; then
+        export SPRING_DATASOURCE_USERNAME="$USER"
+      fi
+      if [ -n "$PASS" ]; then
+        export SPRING_DATASOURCE_PASSWORD="$PASS"
+      fi
+
+      export SPRING_DATASOURCE_DRIVER_CLASS_NAME="com.mysql.cj.jdbc.Driver"
+      export SPRING_JPA_DATABASE_PLATFORM="org.hibernate.dialect.MySQLDialect"
+      export SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT="org.hibernate.dialect.MySQLDialect"
+
+      echo "[entrypoint] Prepared MySQL datasource: $SPRING_DATASOURCE_URL"
+      echo "[entrypoint] Database user: $SPRING_DATASOURCE_USERNAME"
+      ;;
+
     postgres://*|postgresql://*)
       WITHOUT_SCHEME="${URL#*://}"
       if echo "$WITHOUT_SCHEME" | grep -q "@"; then
