@@ -24,6 +24,16 @@ if [ -n "$URL" ]; then
         HOST="$HOST:5432"
       fi
 
+      if echo "$HOST" | grep -q "render.com"; then
+        if ! echo "$DB" | grep -q "sslmode"; then
+          if echo "$DB" | grep -q "?"; then
+            DB="$DB&sslmode=require"
+          else
+            DB="$DB?sslmode=require"
+          fi
+        fi
+      fi
+
       export SPRING_DATASOURCE_URL="jdbc:postgresql://$HOST/$DB"
       
       if [ -n "$USER" ]; then
